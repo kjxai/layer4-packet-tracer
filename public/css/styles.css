@@ -1,0 +1,38 @@
+/* Tailwind CSS Base */
+@tailwind base;
+
+/* Tailwind Components */
+@tailwind components;
+
+/* Tailwind Utilities */
+@tailwind utilities;
+
+/* Optional: custom overrides for dashboard cards */
+body {
+  background-color: #1f2937; /* Tailwind gray-900 */
+  color: #f9fafb; /* Tailwind gray-50 */
+  font-family: 'Inter', sans-serif;
+}
+
+/* Dashboard cards */
+.card {
+  @apply bg-gray-800 p-4 rounded shadow;
+}
+
+.card h2 {
+  @apply text-lg font-semibold;
+}
+
+.card .value {
+  @apply text-2xl mt-2;
+}
+
+/* Grid layout */
+.dashboard-grid {
+  @apply grid grid-cols-2 md:grid-cols-4 gap-4;
+}
+
+/* Top ports / IPs section */
+.top-section {
+  @apply mt-6 grid grid-cols-2 gap-4;
+}
