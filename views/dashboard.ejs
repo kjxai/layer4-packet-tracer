@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <title>Packet Monitor Dashboard</title>
   <link href="/styles.css" rel="stylesheet">
+  <!-- Above existing scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // Fetch latest metrics from REST API and update dashboard
     async function fetchMetrics() {
       try {
         const res = await fetch("/metrics/latest");
         const data = await res.json();
-
         if (!data.totalPackets) return;
 
         document.getElementById("totalPackets").innerText = data.totalPackets;
@@ -18,71 +18,202 @@
         document.getElementById("udpPackets").innerText = data.udpPackets;
         document.getElementById("bandwidth").innerText = data.bandwidth;
 
-        // Top Ports
         const topPortsDiv = document.getElementById("topPorts");
         topPortsDiv.innerHTML = "";
-        for (const [port, count] of Object.entries(data.topPorts)) {
-          const p = document.createElement("div");
-          p.innerText = `${port}: ${count}`;
-          topPortsDiv.appendChild(p);
-        }
+        Object.entries(data.topPorts)
+          .sort((a,b) => b[1]-a[1])
+          .forEach(([port,count]) => {
+            const p = document.createElement("div");
+            p.innerText = `Port ${port}: ${count}`;
+            topPortsDiv.appendChild(p);
+          });
 
-        // Top IPs
         const topIPsDiv = document.getElementById("topIPs");
         topIPsDiv.innerHTML = "";
-        for (const [ip, count] of Object.entries(data.topIPs)) {
-          const p = document.createElement("div");
-          p.innerText = `${ip}: ${count}`;
-          topIPsDiv.appendChild(p);
-        }
+        Object.entries(data.topIPs)
+          .sort((a,b) => b[1]-a[1])
+          .forEach(([ip,count]) => {
+            const p = document.createElement("div");
+            p.innerText = `${ip}: ${count}`;
+            topIPsDiv.appendChild(p);
+          });
 
       } catch (err) {
         console.error(err);
       }
     }
 
-    // Refresh metrics every 10 seconds
     setInterval(fetchMetrics, 10000);
     window.onload = fetchMetrics;
   </script>
+
+  <script>
+  let packetData = [];
+  let bandwidthData = [];
+  let labels = [];
+
+  const packetCtx = document.getElementById("packetChart").getContext("2d");
+  const bandwidthCtx = document.getElementById("bandwidthChart").getContext("2d");
+
+  const packetChart = new Chart(packetCtx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Total Packets",
+          data: packetData,
+          backgroundColor: "rgba(79, 70, 229, 0.2)",
+          borderColor: "rgba(79, 70, 229, 1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  const bandwidthChartObj = new Chart(bandwidthCtx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Bandwidth (Bytes)",
+          data: bandwidthData,
+          backgroundColor: "rgba(220, 38, 38, 0.2)",
+          borderColor: "rgba(220, 38, 38, 1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  async function fetchMetrics() {
+    try {
+      const res = await fetch("/metrics/latest");
+      const data = await res.json();
+      if (!data.totalPackets) return;
+
+      // Update cards
+      document.getElementById("totalPackets").innerText = data.totalPackets;
+      document.getElementById("tcpPackets").innerText = data.tcpPackets;
+      document.getElementById("udpPackets").innerText = data.udpPackets;
+      document.getElementById("bandwidth").innerText = data.bandwidth;
+
+      // Update Top Ports/IPs
+      const topPortsDiv = document.getElementById("topPorts");
+      topPortsDiv.innerHTML = "";
+      Object.entries(data.topPorts)
+        .sort((a,b) => b[1]-a[1])
+        .forEach(([port,count]) => {
+          const p = document.createElement("div");
+          p.innerText = `Port ${port}: ${count}`;
+          topPortsDiv.appendChild(p);
+        });
+
+      const topIPsDiv = document.getElementById("topIPs");
+      topIPsDiv.innerHTML = "";
+      Object.entries(data.topIPs)
+        .sort((a,b) => b[1]-a[1])
+        .forEach(([ip,count]) => {
+          const p = document.createElement("div");
+          p.innerText = `${ip}: ${count}`;
+          topIPsDiv.appendChild(p);
+        });
+
+      // Update charts
+      labels.push(new Date(data.timestamp).toLocaleTimeString());
+      packetData.push(data.totalPackets);
+      bandwidthData.push(data.bandwidth);
+
+      if (labels.length > 10) {
+        labels.shift();
+        packetData.shift();
+        bandwidthData.shift();
+      }
+
+      packetChart.update();
+      bandwidthChartObj.update();
+
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  setInterval(fetchMetrics, 10000);
+  window.onload = fetchMetrics;
+  </script>
 </head>
-<body class="bg-gray-900 text-white font-sans p-6">
-  <h1 class="text-3xl font-bold mb-4">Packet Monitor Dashboard</h1>
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans p-6 min-h-screen">
+  <h1 class="text-4xl font-extrabold mb-6 text-center text-indigo-400 tracking-wide">Packet Monitor Dashboard</h1>
 
-  <!-- Metrics cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold">Total Packets</h2>
-      <div id="totalPackets" class="text-2xl mt-2">0</div>
+  <!-- Metrics Cards Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+    <div class="bg-gradient-to-r from-purple-700 to-purple-900 p-6 rounded-xl shadow-xl transform hover:scale-105 transition duration-300">
+      <h2 class="text-lg font-semibold mb-2 text-gray-300 uppercase tracking-wider">Total Packets</h2>
+      <div id="totalPackets" class="text-3xl font-bold text-white"></div>
     </div>
 
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold">TCP Packets</h2>
-      <div id="tcpPackets" class="text-2xl mt-2">0</div>
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-6 rounded-xl shadow-xl transform hover:scale-105 transition duration-300">
+      <h2 class="text-lg font-semibold mb-2 text-gray-300 uppercase tracking-wider">TCP Packets</h2>
+      <div id="tcpPackets" class="text-3xl font-bold text-white"></div>
     </div>
 
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold">UDP Packets</h2>
-      <div id="udpPackets" class="text-2xl mt-2">0</div>
+    <div class="bg-gradient-to-r from-green-600 to-green-800 p-6 rounded-xl shadow-xl transform hover:scale-105 transition duration-300">
+      <h2 class="text-lg font-semibold mb-2 text-gray-300 uppercase tracking-wider">UDP Packets</h2>
+      <div id="udpPackets" class="text-3xl font-bold text-white"></div>
     </div>
 
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold">Bandwidth</h2>
-      <div id="bandwidth" class="text-2xl mt-2">0</div>
+    <div class="bg-gradient-to-r from-red-600 to-red-800 p-6 rounded-xl shadow-xl transform hover:scale-105 transition duration-300">
+      <h2 class="text-lg font-semibold mb-2 text-gray-300 uppercase tracking-wider">Bandwidth</h2>
+      <div id="bandwidth" class="text-3xl font-bold text-white"></div>
+    </div>
+  </div>
+
+  <!-- Detailed Info Section -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-gray-800 p-6 rounded-xl shadow-xl overflow-auto max-h-96">
+      <h2 class="text-xl font-bold mb-4 text-indigo-300">Top Destination Ports</h2>
+      <div id="topPorts" class="space-y-1 text-lg text-gray-200"></div>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-xl shadow-xl overflow-auto max-h-96">
+      <h2 class="text-xl font-bold mb-4 text-indigo-300">Top Destination IPs</h2>
+      <div id="topIPs" class="space-y-1 text-lg text-gray-200"></div>
     </div>
   </div>
 
-  <!-- Top Ports and IPs -->
-  <div class="mt-6 grid grid-cols-2 gap-4">
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold mb-2">Top Ports</h2>
-      <div id="topPorts"></div>
+  <!-- Metrics Charts -->
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+      <h2 class="text-xl font-bold mb-4 text-indigo-300">Packet Flow (Last 10 Windows)</h2>
+      <canvas id="packetChart" class="w-full h-64"></canvas>
     </div>
 
-    <div class="bg-gray-800 p-4 rounded shadow">
-      <h2 class="text-lg font-semibold mb-2">Top IPs</h2>
-      <div id="topIPs"></div>
+    <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+      <h2 class="text-xl font-bold mb-4 text-indigo-300">Bandwidth Flow (Last 10 Windows)</h2>
+      <canvas id="bandwidthChart" class="w-full h-64"></canvas>
     </div>
   </div>
+
+  <!-- Footer -->
+  <footer class="mt-10 text-center text-gray-400">
+    &copy; 2026 Packet Monitor. All rights reserved.
+  </footer>
 </body>
 </html>
