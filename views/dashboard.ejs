@@ -3,161 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Packet Monitor Dashboard</title>
-  <link href="/styles.css" rel="stylesheet">
-  <!-- Above existing scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    async function fetchMetrics() {
-      try {
-        const res = await fetch("/metrics/latest");
-        const data = await res.json();
-        if (!data.totalPackets) return;
+  <link href="/css/styles.css" rel="stylesheet">
 
-        document.getElementById("totalPackets").innerText = data.totalPackets;
-        document.getElementById("tcpPackets").innerText = data.tcpPackets;
-        document.getElementById("udpPackets").innerText = data.udpPackets;
-        document.getElementById("bandwidth").innerText = data.bandwidth;
-
-        const topPortsDiv = document.getElementById("topPorts");
-        topPortsDiv.innerHTML = "";
-        Object.entries(data.topPorts)
-          .sort((a,b) => b[1]-a[1])
-          .forEach(([port,count]) => {
-            const p = document.createElement("div");
-            p.innerText = `Port ${port}: ${count}`;
-            topPortsDiv.appendChild(p);
-          });
-
-        const topIPsDiv = document.getElementById("topIPs");
-        topIPsDiv.innerHTML = "";
-        Object.entries(data.topIPs)
-          .sort((a,b) => b[1]-a[1])
-          .forEach(([ip,count]) => {
-            const p = document.createElement("div");
-            p.innerText = `${ip}: ${count}`;
-            topIPsDiv.appendChild(p);
-          });
-
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    setInterval(fetchMetrics, 10000);
-    window.onload = fetchMetrics;
-  </script>
-
-  <script>
-  let packetData = [];
-  let bandwidthData = [];
-  let labels = [];
-
-  const packetCtx = document.getElementById("packetChart").getContext("2d");
-  const bandwidthCtx = document.getElementById("bandwidthChart").getContext("2d");
-
-  const packetChart = new Chart(packetCtx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Total Packets",
-          data: packetData,
-          backgroundColor: "rgba(79, 70, 229, 0.2)",
-          borderColor: "rgba(79, 70, 229, 1)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
-
-  const bandwidthChartObj = new Chart(bandwidthCtx, {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: "Bandwidth (Bytes)",
-          data: bandwidthData,
-          backgroundColor: "rgba(220, 38, 38, 0.2)",
-          borderColor: "rgba(220, 38, 38, 1)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.3
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true }
-      }
-    }
-  });
-
-  async function fetchMetrics() {
-    try {
-      const res = await fetch("/metrics/latest");
-      const data = await res.json();
-      if (!data.totalPackets) return;
-
-      // Update cards
-      document.getElementById("totalPackets").innerText = data.totalPackets;
-      document.getElementById("tcpPackets").innerText = data.tcpPackets;
-      document.getElementById("udpPackets").innerText = data.udpPackets;
-      document.getElementById("bandwidth").innerText = data.bandwidth;
-
-      // Update Top Ports/IPs
-      const topPortsDiv = document.getElementById("topPorts");
-      topPortsDiv.innerHTML = "";
-      Object.entries(data.topPorts)
-        .sort((a,b) => b[1]-a[1])
-        .forEach(([port,count]) => {
-          const p = document.createElement("div");
-          p.innerText = `Port ${port}: ${count}`;
-          topPortsDiv.appendChild(p);
-        });
-
-      const topIPsDiv = document.getElementById("topIPs");
-      topIPsDiv.innerHTML = "";
-      Object.entries(data.topIPs)
-        .sort((a,b) => b[1]-a[1])
-        .forEach(([ip,count]) => {
-          const p = document.createElement("div");
-          p.innerText = `${ip}: ${count}`;
-          topIPsDiv.appendChild(p);
-        });
-
-      // Update charts
-      labels.push(new Date(data.timestamp).toLocaleTimeString());
-      packetData.push(data.totalPackets);
-      bandwidthData.push(data.bandwidth);
-
-      if (labels.length > 10) {
-        labels.shift();
-        packetData.shift();
-        bandwidthData.shift();
-      }
-
-      packetChart.update();
-      bandwidthChartObj.update();
-
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  setInterval(fetchMetrics, 10000);
-  window.onload = fetchMetrics;
-  </script>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans p-6 min-h-screen">
   <h1 class="text-4xl font-extrabold mb-6 text-center text-indigo-400 tracking-wide">Packet Monitor Dashboard</h1>
@@ -215,5 +62,9 @@
   <footer class="mt-10 text-center text-gray-400">
     &copy; 2026 Packet Monitor. All rights reserved.
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/dashboard.js"></script>
 </body>
 </html>
