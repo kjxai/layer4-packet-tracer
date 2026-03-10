@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Packet Monitor Dashboard</title>
+  <link href="/styles.css" rel="stylesheet">
+  <script>
+    // Fetch latest metrics from REST API and update dashboard
+    async function fetchMetrics() {
+      try {
+        const res = await fetch("/metrics/latest");
+        const data = await res.json();
+
+        if (!data.totalPackets) return;
+
+        document.getElementById("totalPackets").innerText = data.totalPackets;
+        document.getElementById("tcpPackets").innerText = data.tcpPackets;
+        document.getElementById("udpPackets").innerText = data.udpPackets;
+        document.getElementById("bandwidth").innerText = data.bandwidth;
+
+        // Top Ports
+        const topPortsDiv = document.getElementById("topPorts");
+        topPortsDiv.innerHTML = "";
+        for (const [port, count] of Object.entries(data.topPorts)) {
+          const p = document.createElement("div");
+          p.innerText = `${port}: ${count}`;
+          topPortsDiv.appendChild(p);
+        }
+
+        // Top IPs
+        const topIPsDiv = document.getElementById("topIPs");
+        topIPsDiv.innerHTML = "";
+        for (const [ip, count] of Object.entries(data.topIPs)) {
+          const p = document.createElement("div");
+          p.innerText = `${ip}: ${count}`;
+          topIPsDiv.appendChild(p);
+        }
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Refresh metrics every 10 seconds
+    setInterval(fetchMetrics, 10000);
+    window.onload = fetchMetrics;
+  </script>
+</head>
+<body class="bg-gray-900 text-white font-sans p-6">
+  <h1 class="text-3xl font-bold mb-4">Packet Monitor Dashboard</h1>
+
+  <!-- Metrics cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold">Total Packets</h2>
+      <div id="totalPackets" class="text-2xl mt-2">0</div>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold">TCP Packets</h2>
+      <div id="tcpPackets" class="text-2xl mt-2">0</div>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold">UDP Packets</h2>
+      <div id="udpPackets" class="text-2xl mt-2">0</div>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold">Bandwidth</h2>
+      <div id="bandwidth" class="text-2xl mt-2">0</div>
+    </div>
+  </div>
+
+  <!-- Top Ports and IPs -->
+  <div class="mt-6 grid grid-cols-2 gap-4">
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold mb-2">Top Ports</h2>
+      <div id="topPorts"></div>
+    </div>
+
+    <div class="bg-gray-800 p-4 rounded shadow">
+      <h2 class="text-lg font-semibold mb-2">Top IPs</h2>
+      <div id="topIPs"></div>
+    </div>
+  </div>
+</body>
+</html>
